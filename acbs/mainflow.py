@@ -19,7 +19,7 @@ from acbs.deps import Dependencies
 
 class BuildCore(object):
 
-    def __init__(self, pkgs_name, debug_mode=False, tree='default', version='', init=True, syslog=False, download_only=False):
+    def __init__(self, pkgs_name, debug_mode=False, tree='default', version='', init=True, syslog=False, download_only=False, no_deps=False):
         '''
         '''
         self.pkgs_name = pkgs_name
@@ -38,6 +38,7 @@ class BuildCore(object):
         self.log_to_system = syslog
         self.shared_error = None
         self.download_only = download_only
+        self.skip_deps = no_deps
         self.acbs_settings = {'debug_mode': self.isdebug, 'tree': self.tree,
                               'version': self.acbs_version}
         if init:
@@ -160,7 +161,7 @@ class BuildCore(object):
                     accum += ACBSVariables.get('timings')[i]
                 i += 1
         if group_name:
-            swap_vars(group_name)        
+            swap_vars(group_name)
         if self.download_only:
             x = [[name, 'Downloaded'] for name in self.pkgs_done]
         else:
@@ -189,14 +190,15 @@ class BuildCore(object):
                 os.path.join(self.tree_loc, target, defines_loc)))
             try_build = Dependencies().process_deps(
                 self.pkg_data.build_deps, self.pkg_data.run_deps, pkg_slug)
-            if try_build:
-                if set(try_build).intersection(ACBSVariables.get('pending')):
-                    # Suspect this is dependency loop
-                    err_msg = 'Dependency loop: %s' % '<->'.join(
-                        ACBSVariables.get('pending'))
-                    utils.err_msg(err_msg)
-                    raise ACBSGeneralError(err_msg)
-                self.new_build_thread(try_build)
+            if not self.skip_deps:
+                if try_build:
+                    if set(try_build).intersection(ACBSVariables.get('pending')):
+                        # Suspect this is dependency loop
+                        err_msg = 'Dependency loop: %s' % '<->'.join(
+                            ACBSVariables.get('pending'))
+                        utils.err_msg(err_msg)
+                        raise ACBSGeneralError(err_msg)
+                    self.new_build_thread(try_build)
         if not tmp_dir_loc:
             src_fetcher = SourceFetcher(
                 self.pkg_data.buffer['abbs_data'], self.dump_loc)
