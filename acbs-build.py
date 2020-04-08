@@ -36,7 +36,9 @@ def main():
         clear_tmp(tmp_dir=tmp_loc)
     if args.packages:
         acbs_core_args = {'pkgs_name': args.packages,
-                          'debug_mode': args.debug, 'version': acbs.__version__}
+                          'debug_mode': args.debug,
+                          'version': acbs.__version__,
+                          'no_deps': args.no_deps}
         if args.syslog:
             acbs_core_args['syslog'] = True
         if args.get:
